@@ -1,0 +1,74 @@
+--- a/dist/main.js
++++ b/dist/main.js
+@@ -21,6 +21,25 @@
+ const ALLOW_LOCAL_DEVELOPMENT_ORIGINS = !electron_1.app.isPackaged;
+ const DEV_TOOLS_ENABLED = !electron_1.app.isPackaged || TRACING_ENABLED;
+ const SMOKE_TEST = process.argv.includes('--smoke-test');
++// --- Fister VR mod: opt-in with the Steam launch option `--vr` (or FISTER_VR=1). Off = stock behaviour. ---
++const VR_ENABLED = !SMOKE_TEST && (process.argv.includes('--vr') || process.env.FISTER_VR === '1');
++const VR_LAYER_IPC = 'desktop:vr-layer-source';
++const VR_LAYER_PATH = node_path_1.default.join(__dirname, 'fisterVr.js');
++let vrLayerSource = null;
++function readVrLayerSource() {
++    if (!VR_ENABLED)
++        return null;
++    if (vrLayerSource === null) {
++        try {
++            vrLayerSource = node_fs_1.default.readFileSync(VR_LAYER_PATH, 'utf8');
++        }
++        catch (error) {
++            console.error('[Fister VR] Could not read fisterVr.js:', error);
++            vrLayerSource = '';
++        }
++    }
++    return vrLayerSource || null;
++}
+ const DEFAULT_WINDOW_STATE = { width: 1280, height: 800 };
+ let mainWindow = null;
+ let windowedBounds = null;
+@@ -129,6 +148,10 @@
+     electron_1.ipcMain.on(runtimeConfig_js_1.DESKTOP_IPC.isFullscreen, (event) => {
+         event.returnValue = mainWindow !== null && isTrustedSender(event) && isGameFullscreen(mainWindow);
+     });
++    // Fister VR: hand the page-side WebXR layer to the preload, which runs it in the page's main world.
++    electron_1.ipcMain.on(VR_LAYER_IPC, (event) => {
++        event.returnValue = isTrustedSender(event) ? readVrLayerSource() : null;
++    });
+     electron_1.ipcMain.on(runtimeConfig_js_1.DESKTOP_IPC.exit, (event) => {
+         if (isTrustedSender(event))
+             electron_1.app.quit();
+@@ -167,7 +190,10 @@
+         || permission === 'pointerLock'
+         || permission === 'clipboard-sanitized-write'
+         || (permission === 'persistent-storage' && isMainFrame)
+-        || (permission === 'media' && microphone))
++        || (permission === 'media' && microphone)
++        // Fister VR: Electron has no named permission for WebXR; Chromium's VR permission reaches these
++        // handlers as 'unknown' (newer builds may name it). Only granted when launched with --vr.
++        || (VR_ENABLED && isMainFrame && (permission === 'unknown' || permission === 'xr-spatial-tracking' || permission === 'vr')))
+         && (0, runtimeConfig_js_1.isTrustedRendererUrl)(requestingUrl, ALLOW_DEVELOPMENT_ORIGINS, ALLOW_LOCAL_DEVELOPMENT_ORIGINS);
+     electron_1.session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => webContents === mainWindow?.webContents
+         && isAllowedPermission(permission, requestingOrigin, details.isMainFrame, details.isMainFrame && details.mediaType === 'audio'));
+@@ -436,7 +462,12 @@
+     electron_1.app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+     electron_1.app.commandLine.appendSwitch('disable-pinch');
+     electron_1.app.commandLine.appendSwitch('overscroll-history-navigation', '0');
+-    electron_1.app.commandLine.appendSwitch('enable-features', 'DocumentPolicyIncludeJSCallStacksInCrashReports');
++    // Fister VR: Chromium keeps only the last value of a switch, so the XR features are merged into the same list.
++    // WebXR reaches SteamVR through the OpenXR runtime (SteamVR must be set as the active OpenXR runtime).
++    const enabledFeatures = ['DocumentPolicyIncludeJSCallStacksInCrashReports'];
++    if (VR_ENABLED)
++        enabledFeatures.push('WebXR', 'OpenXR');
++    electron_1.app.commandLine.appendSwitch('enable-features', enabledFeatures.join(','));
+ }
+ electron_1.app.setName('Fister');
+ if (process.platform === 'win32')
+@@ -453,6 +484,8 @@
+ const USE_BORDERLESS_FULLSCREEN = process.platform === 'win32' && !IS_PROTON && Number(node_os_1.default.release().split('.')[2]) >= 22000;
+ if (IS_PROTON)
+     console.info('[Desktop] Proton detected; Steam-compatible GPU startup configured.');
++if (VR_ENABLED)
++    console.info(`[Fister VR] VR mode enabled; layer ${node_fs_1.default.existsSync(VR_LAYER_PATH) ? 'found' : 'MISSING'} at ${VR_LAYER_PATH}.`);
+ if (process.platform !== 'linux' || !electron_1.app.commandLine.hasSwitch('no-sandbox'))
+     electron_1.app.enableSandbox();
+ const singleInstance = electron_1.app.requestSingleInstanceLock();

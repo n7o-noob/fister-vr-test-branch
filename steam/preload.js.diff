@@ -1,0 +1,22 @@
+--- a/dist/preload.js
++++ b/dist/preload.js
+@@ -2,6 +2,19 @@
+ Object.defineProperty(exports, "__esModule", { value: true });
+ const electron_1 = require("electron");
+ const runtimeInfo = electron_1.ipcRenderer.sendSync('desktop:runtime-info');
++// Fister VR: main.js only returns the layer when launched with --vr and the page is the trusted game origin.
++// It must run in the page's main world (not this isolated preload world) and before the game creates its
++// WebGLRenderer, so it is executed here at document start.
++const vrLayerSource = runtimeInfo ? electron_1.ipcRenderer.sendSync('desktop:vr-layer-source') : null;
++if (typeof vrLayerSource === 'string' && vrLayerSource) {
++    try {
++        // webFrame.executeJavaScript runs in the main world and is not subject to the page's CSP (no eval).
++        void electron_1.webFrame.executeJavaScript(vrLayerSource).catch((error) => console.error('[Fister VR] Layer failed:', error));
++    }
++    catch (error) {
++        console.error('[Fister VR] Could not inject the VR layer:', error);
++    }
++}
+ if (runtimeInfo) {
+     electron_1.contextBridge.exposeInMainWorld('fisterDesktop', Object.freeze({
+         ...runtimeInfo,

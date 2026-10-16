@@ -1,0 +1,75 @@
+<!doctype html><html><head><meta charset="utf-8"><title>mock fister ui</title>
+<style>
+body{margin:0;background:#000;overflow:hidden;font-family:Tahoma,Arial,sans-serif}
+.win{position:absolute;background:#c0c0c0;box-shadow:inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf, inset -2px -2px #808080, inset 2px 2px #fff;padding:3px}
+.title{background:linear-gradient(90deg,#000080,#1084d0);color:#fff;font-weight:bold;padding:2px 6px;font-size:13px}
+#hud{position:fixed;inset:0;pointer-events:none}
+#health{left:16px;top:16px;width:240px}
+#health .bar{height:16px;background:#000080;margin:4px}
+#stats{display:flex;gap:4px;margin:4px}#stats div{flex:1;background:#c0c0c0;box-shadow:inset 1px 1px #808080, inset -1px -1px #fff;padding:3px;font-size:12px;font-weight:bold;text-align:center}
+#score{right:16px;top:16px;width:260px}
+#charge{position:absolute;left:50%;bottom:60px;transform:translateX(-50%);width:300px;height:14px;background:rgba(0,0,0,.5);border:2px solid #fff}
+#charge i{display:block;height:100%;background:#f80;width:0}
+#pause{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;pointer-events:auto}
+#pause.visible{display:block}
+#menu{left:50%;top:22%;width:260px;transform:translateX(-50%)}
+#menu button,#settings button{display:block;width:100%;margin:6px 0;padding:8px;font:bold 14px Tahoma;background:#c0c0c0;border:0;box-shadow:inset -1px -1px #0a0a0a, inset 1px 1px #fff;cursor:pointer}
+#settings{left:50%;top:15%;width:360px;transform:translateX(-50%);display:none}
+#settings.visible{display:block}
+#settings label{display:block;margin:6px;font-size:13px}
+#list{height:90px;overflow-y:auto;background:#fff;margin:6px;box-shadow:inset 1px 1px #808080}
+#list div{padding:4px 6px;font-size:13px}
+</style><style>#vwbox{position:fixed;left:25vw;top:10vh;width:50vw;height:20vh;background:#357}@media (max-height:800px){#vwbox{border:6px solid red}}</style>
+</head>
+<body>
+<div id="vwbox"></div>
+<div id="emoteWheel" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;height:300px;border-radius:50%;background:rgba(0,0,0,.6)"><div class="emote" data-emote="dance" style="position:absolute;left:110px;top:20px;width:80px;height:50px;background:#c0c0c0;cursor:pointer">Dance</div><div class="emote" data-emote="wave" style="position:absolute;left:110px;top:230px;width:80px;height:50px;background:#c0c0c0;cursor:pointer">Wave</div></div><div id="game"></div>
+<button id="respawn" style="display:none">Respawn</button>
+<div id="hud">
+  <div class="win" id="health"><div class="title">HEALTH</div><div class="bar"></div><div id="stats"><div>STYLE: <span style="color:#d60">360</span></div><div>SOULS: <span style="color:#088">0</span></div></div></div>
+  <div class="win" id="score"><div class="title">Scoreboard</div><div style="padding:6px;font-size:12px">1. n7 &nbsp; 0 &nbsp; 0/1</div></div>
+  <div id="charge"><i></i></div>
+</div>
+<div id="pause">
+  <div class="win" id="menu"><div class="title">Paused</div><button id="resume">Resume</button><button id="openSettings">Settings</button></div>
+  <div class="win" id="settings"><div class="title">Settings</div>
+    <label>Name <input id="name" type="text" value="n7o"></label>
+    <label>Volume <input id="vol" type="range" min="0" max="100" value="20" style="width:200px"></label>
+    <label><input id="fpsbox" type="checkbox"> Show FPS</label>
+    <label>Quality <select id="quality"><option>Low</option><option selected>Medium</option><option>High</option></select></label>
+    <div id="list">${'x'}</div>
+    <button id="closeSettings">Close</button>
+  </div>
+</div>
+<script type="module" src="./game2.js"></script>
+<script type="module">
+  await new Promise(r => { const t = setInterval(() => { if (window.game) { clearInterval(t); r(); } }, 20); });
+  const g = window.game, pause = document.getElementById('pause'), settings = document.getElementById('settings');
+  const list = document.getElementById('list'); list.innerHTML = Array.from({ length: 20 }, (_, i) => '<div>Keybind row ' + (i + 1) + '</div>').join('');
+  g.ui = { settingsOpened: 0, resumed: 0, volume: 20, fps: false, quality: 'Medium' };
+  document.addEventListener('pointerlockchange', () => {
+    const locked = document.pointerLockElement === g.lockEl();
+    const wheelOpen = document.getElementById('emoteWheel') && document.getElementById('emoteWheel').style.display === 'block';
+    pause.classList.toggle('visible', !locked && !wheelOpen);
+  });
+  document.getElementById('resume').onclick = () => { g.ui.resumed++; g.lockEl().requestPointerLock(); };
+  document.getElementById('openSettings').onclick = () => { g.ui.settingsOpened++; settings.classList.add('visible'); };
+  document.getElementById('closeSettings').onclick = () => settings.classList.remove('visible');
+  document.getElementById('vol').addEventListener('input', (e) => { g.ui.volume = Number(e.target.value); });
+  document.getElementById('fpsbox').addEventListener('change', (e) => { g.ui.fps = e.target.checked; });
+  document.getElementById('quality').addEventListener('change', (e) => { g.ui.quality = e.target.value; });
+  // Emote wheel like Fister's: hold E to show it (frees the mouse), click an emote, the player emotes for 1.5 s.
+  const wheel = document.getElementById('emoteWheel');
+  g.ui.emotes = [];
+  window.addEventListener('keydown', (e) => { if (e.code === 'KeyE' && wheel.style.display === 'none') { wheel.style.display = 'block'; document.exitPointerLock(); } });
+  window.addEventListener('keyup', (e) => { if (e.code === 'KeyE') { wheel.style.display = 'none'; g.lockEl().requestPointerLock(); } });
+  for (const el of wheel.querySelectorAll('.emote')) el.addEventListener('click', () => {
+    g.ui.emotes.push(el.dataset.emote);
+    const me = g.players.get('me'); me.currentAnimationState = 'emote_' + el.dataset.emote;
+    setTimeout(() => { me.currentAnimationState = 'idle'; }, 1500);
+  });
+  // charge bar fills continuously
+  const bar = document.querySelector('#charge i');
+  (function tick() { bar.style.width = ((performance.now() / 20) % 100) + '%'; requestAnimationFrame(tick); })();
+</script>
+</body></html>

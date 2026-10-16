@@ -1,0 +1,23 @@
+node_modules/
+test/site/three.module.js
+test/site/three.core.js
+*.zip
+.DS_Store
+test/clip-frame.png
+test/setup-qol.png
+test/reload-stopped.png
+test/r*.json
+test/run30-page.png
+test/run30-clip.png
+test/run31-layer.png
+test/run32-panel.png
+
+# Test branch: don't publish raw (unsealed) runnable build outputs. Only the sealed bookmarklets and the
+# gated docs/index.html are committed; raw ones are regenerated locally by tools/build.cjs for tests.
+dist/FisterQoL.user.js
+dist/fister-vr-qol.bookmarklet.txt
+dist/fister-vr.bookmarklet.txt
+dist/fister-vr.user.js
+dist/fisterVr.js
+dist/fisterqol.bookmarklet.js
+test/run40-*.png

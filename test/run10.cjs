@@ -1,0 +1,43 @@
+const { chromium } = require('playwright');
+const http = require('http'), fs = require('fs'), path = require('path');
+const root = path.join(__dirname, 'site');
+const server = http.createServer((req, res) => { const f = path.join(root, req.url.split('?')[0]);
+  fs.readFile(f, (e, d) => { if (e) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'Content-Type': f.endsWith('.js') ? 'text/javascript' : 'text/html' }); res.end(d); }); }).listen(8774, async () => {
+  const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('http://127.0.0.1:8774/game2.html');
+  await page.waitForFunction(() => window.game && window.game.frames > 10);
+  const bm = decodeURIComponent(fs.readFileSync(path.join(__dirname, '..', 'dist', 'fister-vr.bookmarklet.txt'), 'utf8').slice(11));
+  await page.evaluate((c) => (0, eval)(c), bm);
+  await page.waitForFunction(() => window.fisterVR && fisterVR.state.renderers.size > 0);
+  const out = await page.evaluate(async () => {
+    const vr = fisterVR, s = vr.state, I = vr._internals, g = window.game, T = window.THREE_REF;
+    const r = g.renderer;
+    r.setRenderTarget(new T.WebGLRenderTarget(64, 64));
+    s.renderer = r; s.gameCamera = g.camera; s.presenting = true; r.xr.isPresenting = true; s.redirectRaf = true;
+    s.pendingRecenter = false; I.spoofFocus(true);
+    const pad = (hand) => ({ handedness: hand, gamepad: { buttons: [0, 1, 2, 3, 4, 5].map(() => ({ pressed: false })), axes: [0, 0, 0, 0] } });
+    const frame = () => ({ session: { inputSources: [pad('right'), pad('left')] } });
+    let t = performance.now();
+    const step = async (n = 1) => { for (let i = 0; i < n; i++) { I.xrFrame(r, (t += 16), frame()); await new Promise(res => setTimeout(res, 0)); } };
+    await new Promise(res2 => setTimeout(res2, 150)); await step(5);
+    const [c0, c1] = s.controllers;
+    c0.source = { handedness: 'right' }; c0.handedness = 'right'; c1.source = { handedness: 'left' }; c1.handedness = 'left';
+    c0.group.position.set(0.2, -0.2, -0.3); c0.group.rotation.set(0, 0.8, 0); c0.group.updateMatrix(); c1.group.updateMatrix();
+    await step(30);
+    const me = g.players.get('me');
+    const at = (o) => +s.rig.getWorldPosition(new T.Vector3()).distanceTo(o.getWorldPosition(new T.Vector3())).toFixed(3);
+    const snap = () => ({ gameplay: s.gameplay, ragdoll: s.ragdoll, eyesToHead: at(me.head), eyesToGameCamera: at(g.camera), headHidden: !me.head.visible,
+      torsoHidden: me.torso.layers.mask === (1 << 31), summary: vr._internals.liveSummary()[1] });
+    const res = { standing: snap() };
+    g.ragdoll = true; const yawBefore = g.yaw; await step(40);
+    res.ragdolled = { ...snap(), aimPaused: g.yaw === yawBefore };
+    g.ragdoll = false; await step(20);
+    res.gotUp = snap();
+    res.log = vr._internals.logBuffer.filter(e => /agdoll|feet/.test(e.msg)).map(e => e.msg);
+    return res;
+  });
+  console.log(JSON.stringify(out, null, 1)); console.log('errors', errors);
+  await browser.close(); server.close();
+});

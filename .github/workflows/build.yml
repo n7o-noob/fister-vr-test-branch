@@ -1,0 +1,41 @@
+# Test branch: the served page and bookmarklets are SEALED (password-gated). An unsealed build must never be
+# published, so there is NO automatic build on push (that would overwrite docs/index.html with an unsealed page,
+# and CI has no password to re-seal). Rebuilds are done locally with:
+#   node tools/build.cjs && SEAL_PASSWORD=... node tools/seal-build.cjs
+# This workflow only runs when dispatched by hand AND the SEAL_PASSWORD secret is set, so it can seal too.
+name: Build (sealed, manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Require the seal password
+        env:
+          SEAL_PASSWORD: ${{ secrets.SEAL_PASSWORD }}
+        run: |
+          if [ -z "$SEAL_PASSWORD" ]; then
+            echo "SEAL_PASSWORD secret is not set; refusing to publish an unsealed page." >&2
+            exit 1
+          fi
+      - run: node tools/build.cjs
+      - name: Seal served artifacts
+        env:
+          SEAL_PASSWORD: ${{ secrets.SEAL_PASSWORD }}
+        run: node tools/seal-build.cjs
+      - name: Commit built files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs dist
+          git diff --cached --quiet || git commit -m "Build and seal docs and dist"
+          git push

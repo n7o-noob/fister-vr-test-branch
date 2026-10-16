@@ -1,0 +1,447 @@
+<title>Fister VR test: QoL __QOL_VERSION__</title>
+<style>
+/* Layout: a Windows 95 desktop (the look fister.fun uses): one column of bevelled windows, sized for a Quest
+   Browser window and laser-pointer taps. Deliberately single-theme: the classic teal desktop in light and dark. */
+:root {
+  --desktop: #008080;
+  --face: #c0c0c0;
+  --hilite: #ffffff;
+  --light: #dfdfdf;
+  --shadow: #808080;
+  --dark: #0a0a0a;
+  --ink: #000000;
+  --title-a: #000080;
+  --title-b: #1084d0;
+  --field: #ffffff;
+  --muted: #3c3c3c;
+  --left: #0000a8;
+  --right: #a80000;
+  --ok: #006400;
+  --font-ui: Tahoma, "MS Sans Serif", "Microsoft Sans Serif", Geneva, Verdana, Roboto, sans-serif;
+  --font-mono: "Courier New", Consolas, ui-monospace, monospace;
+  --raised: inset -1px -1px var(--dark), inset 1px 1px var(--hilite), inset -2px -2px var(--shadow), inset 2px 2px var(--light);
+  --sunken: inset -1px -1px var(--hilite), inset 1px 1px var(--shadow), inset -2px -2px var(--light), inset 2px 2px var(--dark);
+  --pressed: inset -1px -1px var(--hilite), inset 1px 1px var(--dark), inset -2px -2px var(--light), inset 2px 2px var(--shadow);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--desktop); color: var(--ink); font: 15px/1.45 var(--font-ui); }
+.wrap { max-width: 780px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 24px; display: grid; gap: 22px; }
+.win { background: var(--face); box-shadow: var(--raised); padding: 3px; min-width: 0; }
+.titlebar { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: linear-gradient(90deg, var(--title-a), var(--title-b)); color: #fff; padding: 3px 4px 3px 6px; font-weight: bold; font-size: 14px; }
+.titlebar .name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.titlebar .name span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-btns { display: flex; gap: 2px; flex: none; }
+.tb-btns i { width: 18px; height: 16px; background: var(--face); box-shadow: var(--raised); display: grid; place-items: center;
+  font: bold 11px/1 var(--font-ui); color: var(--ink); font-style: normal; }
+.icon { width: 16px; height: 16px; display: inline-flex; gap: 2px; flex: none; }
+.icon b { flex: 1; }
+.icon b:first-child { background: #35c4ff; } .icon b:last-child { background: #ff5a5a; }
+.panel { padding: 14px; display: grid; gap: 14px; }
+.menubar { display: flex; gap: 14px; padding: 2px 8px 3px; font-size: 14px; }
+.menubar u { text-decoration: underline; }
+h1 { font: bold clamp(1.6rem, 6vw, 2.3rem)/1.1 var(--font-ui); margin: 0; text-wrap: balance; }
+.lede { margin: 0; max-width: 64ch; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+section { min-width: 0; }
+ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 10px; }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: 2rem 1fr; gap: 10px; align-items: start; }
+ol.steps li::before { content: counter(s); background: var(--title-a); color: #fff; font-weight: bold; text-align: center; line-height: 1.6rem; height: 1.6rem; box-shadow: var(--raised); }
+ol.steps li > div { min-width: 0; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.field { display: grid; gap: 4px; min-width: 0; align-content: start; padding: 8px 10px 10px; box-shadow: inset -1px -1px var(--hilite), inset 1px 1px var(--shadow), inset -2px -2px var(--shadow), inset 2px 2px var(--hilite); }
+.field label { font-weight: bold; font-size: 14px; }
+.field small { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+select, input[type="number"] {
+  font: 15px var(--font-ui); color: var(--ink); background: var(--field); border: 0; border-radius: 0; box-shadow: var(--sunken);
+  padding: 8px 8px; min-height: 40px; width: 100%;
+}
+select:focus-visible, input:focus-visible, button:focus-visible, textarea:focus-visible { outline: 1px dotted var(--ink); outline-offset: -5px; }
+.copyrow { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+button.primary {
+  font: bold 16px var(--font-ui); color: var(--ink); background: var(--face); border: 0; border-radius: 0; box-shadow: var(--raised);
+  padding: 12px 22px; min-height: 48px; min-width: 200px; cursor: pointer;
+}
+button.primary:active { box-shadow: var(--pressed); padding: 13px 21px 11px 23px; }
+.status { font-size: 14px; }
+.status.ok { color: var(--ok); font-weight: bold; }
+textarea {
+  width: 100%; height: 110px; font: 12px/1.35 var(--font-mono); color: var(--ink); background: var(--field); border: 0; border-radius: 0;
+  box-shadow: var(--sunken); padding: 8px; resize: vertical; word-break: break-all;
+}
+.size { font: 12px var(--font-ui); color: var(--muted); font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; background: var(--field); box-shadow: var(--sunken); padding: 2px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 7px 8px; vertical-align: top; }
+th { background: var(--face); box-shadow: var(--raised); font-weight: bold; font-size: 13px; position: sticky; top: 0; }
+tbody tr:nth-child(even) td { background: #eeeeee; }
+.hand { display: inline-block; font: bold 11px/1 var(--font-ui); padding: 4px 6px; background: var(--face); box-shadow: var(--raised); }
+.hand.l { color: var(--left); }
+.hand.r { color: var(--right); }
+code { font: 13px var(--font-mono); background: var(--field); padding: 1px 4px; box-shadow: var(--sunken); }
+ul.notes { margin: 0; padding-left: 1.2rem; display: grid; gap: 8px; }
+ul.notes li { max-width: 68ch; }
+.taskbar { display: flex; align-items: center; gap: 8px; background: var(--face); box-shadow: inset 0 1px var(--light), inset 0 2px var(--hilite); padding: 4px 6px; font-size: 13px; flex-wrap: wrap; }
+.taskbar .start { display: inline-flex; align-items: center; gap: 6px; font-weight: bold; padding: 3px 8px; box-shadow: var(--raised); }
+.taskbar .tray { margin-left: auto; padding: 3px 8px; box-shadow: var(--sunken); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <div role="note" style="margin:0 0 12px;padding:10px 12px;background:#ffffe1;color:#000;border:2px solid #000;box-shadow:3px 3px 0 #808080;font:600 14px/1.4 Tahoma,Arial,sans-serif">TEST BUILD, not the live page. Fister VR __VERSION__ with FisterQoL __QOL_VERSION__ (ported from the 1.6.5 VR build). The live setup page and GitHub are unchanged. Pick "Fister VR + FisterQoL __QOL_VERSION__" below.</div>
+  <header class="win">
+    <div class="titlebar"><div class="name"><span class="icon" aria-hidden="true"><b></b><b></b></span><span>Fister VR Setup (test: QoL __QOL_VERSION__)</span></div><div class="tb-btns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></div></div>
+    <div class="menubar" aria-hidden="true"><span><u>F</u>ile</span><span><u>E</u>dit</span><span><u>H</u>elp</span></div>
+    <div class="panel">
+      <h1>Fister VR</h1>
+      <p class="lede">Play fister.fun in your Quest 2 headset straight from the Quest Browser. No PC, SteamVR or extensions needed. You save a bookmark that adds an Enter VR button to the running game.</p>
+      <p class="note">Unofficial fan mod, v__VERSION__. Not made by or affiliated with the Fister developers.</p>
+    </div>
+  </header>
+
+  <section class="win">
+    <div class="titlebar"><div class="name"><span class="icon" aria-hidden="true"><b></b><b></b></span><span>Your settings</span></div><div class="tb-btns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></div></div>
+    <div class="panel">
+      <div class="fields">
+        <div class="field" style="grid-column: 1 / -1">
+          <label for="bundle">What the bookmark loads</label>
+          <select id="bundle">
+            <option value="vr" selected>Fister VR only</option>
+            <option value="qol">Fister VR + FisterQoL __QOL_VERSION__</option>
+          </select>
+          <small id="bundleNote">Just the VR mod. Small and quick to paste.</small>
+        </div>
+        <div class="field" id="qolOptions" hidden style="grid-column: 1 / -1">
+          <label><input type="checkbox" id="applyEach" checked> Use these VR settings every time you tap the bookmark</label>
+          <small>Turn off to set them once and then change them in the game under Settings &gt; QoL &gt; VR. Clip view, the save-clip button and the other QoL options are in that tab.</small>
+        </div>
+        <div class="field">
+          <label for="aimMode">Aim with</label>
+          <select id="aimMode">
+            <option value="hand" selected>Right hand (like Vivecraft)</option>
+            <option value="left">Left hand</option>
+            <option value="head">Mouse, as on desktop</option>
+          </select>
+          <small>Your character faces and punches where that controller points, and other players see it. A thin line from the hand shows the aim; that hand's trigger also clicks menus.</small>
+        </div>
+        <div class="field">
+          <label for="turnMode">Turning</label>
+          <select id="turnMode">
+            <option value="snap" selected>Snap turn</option>
+            <option value="smooth">Smooth turn</option>
+            <option value="rig">Snap turn, view only (mouse aim)</option>
+            <option value="off">Off</option>
+          </select>
+          <small>Right stick left/right. With right-hand aim, turning always rotates your view.</small>
+        </div>
+        <div class="field">
+          <label for="snapTurnPixels">Snap turn strength</label>
+          <input id="snapTurnPixels" type="number" min="20" max="2000" step="10" value="250">
+          <small>Only used with mouse aim: mouse pixels sent per snap.</small>
+        </div>
+        <div class="field">
+          <label for="framebufferScale">Headset resolution</label>
+          <select id="framebufferScale">
+            <option value="1">100% (sharpest)</option>
+            <option value="0.85" selected>85% (balanced)</option>
+            <option value="0.7">70% (smoothest)</option>
+            <option value="0.55">55% (for heavy fights)</option>
+          </select>
+          <small>Lower it if the game stutters on the Quest 2.</small>
+        </div>
+        <div class="field">
+          <label for="worldScale">You feel</label>
+          <select id="worldScale">
+            <option value="0.8">Smaller (0.8×)</option>
+            <option value="1" selected>Normal size (1×)</option>
+            <option value="1.25">Bigger (1.25×)</option>
+            <option value="1.5">Much bigger (1.5×)</option>
+          </select>
+          <small>Scales how far your head moves the view.</small>
+        </div>
+        <div class="field">
+          <label for="anchor">Eyes go in</label>
+          <select id="anchor">
+            <option value="auto" selected>Automatic</option>
+            <option value="head">Your avatar's head</option>
+            <option value="camera">The game camera</option>
+          </select>
+          <small>Automatic uses the game's first-person mode if found, otherwise your avatar's head.</small>
+        </div>
+        <div class="field">
+          <label for="eyeUp">Eye height (in the head)</label>
+          <select id="eyeUp">
+            <option value="0">Head centre</option>
+            <option value="0.05">5 cm higher</option>
+            <option value="0.1" selected>10 cm higher</option>
+            <option value="0.15">15 cm higher</option>
+            <option value="0.22">22 cm higher</option>
+          </select>
+          <small>Used when your eyes are placed in your avatar's head.</small>
+        </div>
+        <div class="field">
+          <label for="armMode">Arms</label>
+          <select id="armMode">
+            <option value="hand" selected>Hands on the controllers</option>
+            <option value="aim">From shoulder toward your hands</option>
+            <option value="off">Game animation only</option>
+          </select>
+          <small>Visual only, for you. Other players see the game's own arms.</small>
+        </div>
+        <div class="field">
+          <label for="handOffset">Hand position (hands on controllers)</label>
+          <select id="handOffset">
+            <option value="0.15,0.06" selected>Forward and centred</option>
+            <option value="0.28,0.1">Further forward</option>
+            <option value="0.08,0.03">Slightly forward</option>
+            <option value="0,0">Exactly on the controllers</option>
+          </select>
+          <small>Only for "Hands on the controllers". Moves your hands out in front of you and toward your middle.</small>
+        </div>
+        <div class="field">
+          <label for="armScale">Arm size</label>
+          <select id="armScale">
+            <option value="1">Normal (100%)</option>
+            <option value="0.75">Smaller (75%)</option>
+            <option value="0.5" selected>Small (50%)</option>
+            <option value="0.35">Tiny (35%)</option>
+          </select>
+          <small>Shrinks your arms in the headset so they're out of the way. Hands still sit at your controllers. Only you see it.</small>
+        </div>
+        <div class="field">
+          <label for="boxScale">Controller boxes</label>
+          <select id="boxScale">
+            <option value="1">Normal</option>
+            <option value="0.6" selected>Small</option>
+            <option value="0.3">Tiny</option>
+            <option value="0">Hidden</option>
+          </select>
+          <small>The little boxes that show where your controllers are.</small>
+        </div>
+        <div class="field">
+          <label for="hideBody">Your torso and legs</label>
+          <select id="hideBody">
+            <option value="true" selected>Hidden, with clothing</option>
+            <option value="false">Shown</option>
+          </select>
+          <small>Head, arms and held items stay. Only you see this.</small>
+        </div>
+        <div class="field">
+          <label for="menuMode">Game menus and HUD</label>
+          <select id="menuMode">
+            <option value="body" selected>Floating in front of you</option>
+            <option value="off">Off</option>
+          </select>
+          <small>Main menu, loading screens, settings, health, scoreboard and the charge bar, on a panel that stays in front of your body. Point your right hand at it and pull the trigger to click.</small>
+        </div>
+        <div class="field">
+          <label for="uiOpacity">VR screen transparency</label>
+          <select id="uiOpacity">
+            <option value="1">Solid</option>
+            <option value="0.9" selected>Slightly see-through</option>
+            <option value="0.75">See-through</option>
+            <option value="0.6">Very see-through</option>
+            <option value="0.4">Faint</option>
+          </select>
+          <small>The game's menus and HUD show on a floating 1920x1080 screen. This sets how much of the world shows through it.</small>
+        </div>
+        <div class="field">
+          <label for="hideOutlines">Outline glow</label>
+          <select id="hideOutlines">
+            <option value="world" selected>Hide on power-ups and objects</option>
+            <option value="all">Hide everywhere, players too</option>
+            <option value="off">Show (may appear as black boxes)</option>
+          </select>
+          <small>Outline effects draw as solid black boxes in the headset. Your own outline is always hidden, since you're inside it.</small>
+        </div>
+      </div>
+
+      <div class="copyrow">
+        <button class="primary" id="copy" type="button">Copy bookmarklet</button>
+        <span class="status" id="status" role="status">Settings are built into the copy.</span>
+      </div>
+      <div class="field">
+        <label for="code">If Copy doesn't work, select all of this and copy it</label>
+        <textarea id="code" readonly spellcheck="false"></textarea>
+        <span class="size" id="size"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="win" id="qolInfo" hidden>
+    <div class="titlebar"><div class="name"><span class="icon" aria-hidden="true"><b></b><b></b></span><span>With FisterQoL</span></div><div class="tb-btns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></div></div>
+    <div class="panel">
+      <ul class="notes">
+        <li><b>Tap the bookmark any time on fister.fun</b>, best from the main menu. FisterQoL has to start before the game does, so the bookmark restarts the game inside the same tab with FisterQoL in it (a few seconds, like a reload). If you're in a match you'll leave it. The old copy is stopped so it doesn't use the headset's memory or sound.</li>
+        <li>You get FisterQoL's <b>QoL</b> settings tab, with a <b>VR</b> section for every VR setting, Enter VR, Recenter, VR info and Copy log.</li>
+        <li><b>Clips in VR:</b> while the game records a clip, it records your first-person headset view, and saved clips go to the Discord through the game's normal clip upload. Click the <b>right thumbstick</b> to save a clip (it presses your Save clip key from the game's controls).</li>
+        <li>QoL HUD items show on the floating HUD; low graphics, team outlines, texture packs, skyboxes and custom animations apply in the headset. The FPS limit is ignored in VR and crosshairs are hidden (you aim with your hand).</li>
+        <li>The bookmark is longer than the VR-only one because it carries all of FisterQoL (compressed). Paste the whole thing.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="win">
+    <div class="titlebar"><div class="name"><span class="icon" aria-hidden="true"><b></b><b></b></span><span>Set it up once</span></div><div class="tb-btns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></div></div>
+    <div class="panel">
+      <ol class="steps">
+        <li><div>Open this page <b>in the Quest Browser</b> inside your headset, then choose your settings and press <b>Copy bookmarklet</b>.</div></li>
+        <li><div>Bookmark any page (the star in the address bar). Open <b>Bookmarks</b>, edit that bookmark, rename it <b>Fister VR</b>, and paste over its URL. The pasted text starts with <code>javascript:</code>.</div></li>
+        <li><div>Go to <b>fister.fun</b>. You can start from the main menu; you don't need to be in a match.</div></li>
+        <li><div>Open Bookmarks and tap <b>Fister VR</b>. Two buttons appear bottom-left: <b>Enter VR</b> and <b>VR Info</b>.</div></li>
+        <li><div>Press <b>Enter VR</b>. The game's menus float in front of you; point your right hand and pull the trigger to click. When a match starts you're placed in your avatar's head. Click the left stick in to recenter.</div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="win">
+    <div class="titlebar"><div class="name"><span class="icon" aria-hidden="true"><b></b><b></b></span><span>Controls</span></div><div class="tb-btns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></div></div>
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Controller</th><th>Input</th><th>Sends to the game</th></tr></thead>
+          <tbody>
+            <tr><td><span class="hand r">Right</span></td><td>Pointing</td><td>Your aim: where you face and punch</td></tr>
+            <tr><td><span class="hand l">Left</span> <span class="hand r">Right</span></td><td>Trigger</td><td>Left mouse button</td></tr>
+            <tr><td><span class="hand r">Right</span></td><td>Trigger, pointing at a menu</td><td>Clicks it (buttons, checkboxes, sliders; dropdowns step to the next choice)</td></tr>
+            <tr><td><span class="hand r">Right</span></td><td>Thumbstick up/down, pointing at a menu</td><td>Scroll</td></tr>
+            <tr><td><span class="hand l">Left</span> <span class="hand r">Right</span></td><td>Grip</td><td>Right mouse button</td></tr>
+            <tr><td><span class="hand l">Left</span></td><td>Thumbstick</td><td>W A S D (moves toward where you aim)</td></tr>
+            <tr><td><span class="hand l">Left</span></td><td>Thumbstick click</td><td>Recenter view</td></tr>
+            <tr><td><span class="hand l">Left</span></td><td>Y</td><td>Escape: opens the pause menu</td></tr>
+            <tr><td><span class="hand r">Right</span></td><td>Thumbstick left/right</td><td>Turn</td></tr>
+            <tr><td><span class="hand r">Right</span></td><td>A (hold)</td><td>V: voice chat</td></tr>
+            <tr><td><span class="hand l">Left</span></td><td>X</td><td>Emote wheel (holds E; pick with the laser and trigger)</td></tr>
+            <tr><td><span class="hand r">Right</span></td><td>B</td><td>Wake up input if buttons stop working</td></tr>
+            <tr><td><span class="hand r">Right</span></td><td>Thumbstick click</td><td>Save a clip (your Save clip key; needs FisterQoL)</td></tr>
+            <tr><td><span class="hand l">Left</span> <span class="hand r">Right</span></td><td>Both grips, hold 1 s</td><td>Open or close the debug console (shows on the menu panel)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="lede">These are first guesses. Once you know what Fister really uses for punch, grab, parry and jump, they can be remapped.</p>
+    </div>
+  </section>
+
+  <section class="win">
+    <div class="titlebar"><div class="name"><span class="icon" aria-hidden="true"><b></b><b></b></span><span>If something's off</span></div><div class="tb-btns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></div></div>
+    <div class="panel">
+      <ul class="notes">
+        <li><b>No buttons after tapping the bookmark:</b> the page wasn't finished loading. Wait a moment and tap it again. You can stay in VR through menus, loading screens and between rounds.</li>
+        <li><b>Something stops working:</b> right after it happens, hold both grips for a second to open the debug console on the menu panel, or leave VR and press <b>VR Info</b>. The top lines show what the mod thinks is happening, such as whether you're in the gameplay view and why, plus frame timing and how many black-flash causes it blocked. Red lines are errors. <b>Copy all</b> copies everything to send.</li>
+        <li><b>Buttons stop working:</b> press <b>B</b> on the right controller. The mod also does this by itself when the page loses focus.</li>
+        <li><b>Aim drifts or overshoots:</b> it learns your in-game mouse sensitivity during the first few seconds of aiming. Sweep your right hand left and right once after entering VR.</li>
+        <li><b>Stutter:</b> lower the headset resolution above, copy again, and replace the bookmark's URL.</li>
+        <li><b>Reloading the page removes the mod.</b> Tap the bookmark again after each reload.</li>
+      </ul>
+    </div>
+  </section>
+  <footer class="taskbar"><span class="start"><span class="icon" aria-hidden="true"><b></b><b></b></span>Fister VR</span><span>Setup</span><span class="tray">v__VERSION__</span></footer>
+</div>
+
+<script>
+const LAYER_SOURCE = __LAYER_SOURCE__;
+const QOL_PAYLOAD = __QOL_PAYLOAD__;
+__QOL_LOADER__
+// --- Test-branch sealing: the copied bookmarklet is itself password-sealed, so it won't run without the password.
+__SEAL_OPEN__
+__SEAL_SEAL__
+function fvSealPassword() {
+  try { var p = sessionStorage.getItem('fvtb_pw'); if (p) return p; } catch (e) {}
+  var t = prompt('Test-branch password (needed to seal the bookmarklet)');
+  if (t) { try { sessionStorage.setItem('fvtb_pw', t); } catch (e) {} }
+  return t || '';
+}
+async function fvSealedBookmarklet(code, pw) {
+  var env = await fvSeal(code, pw);
+  // Embed the decrypter's own source + the sealed blob. On tap it asks for the password, decrypts and runs.
+  var inner = '(async function(){var E=' + JSON.stringify(env) + ';' + fvOpen.toString()
+    + 'try{var p=prompt("Fister VR test \\u2014 enter password to run");if(p===null)return;var c=await fvOpen(E,p);(0,eval)(c);}catch(e){alert("Could not run (wrong password or blocked): "+(e&&e.message||e));}})();void 0;';
+  return 'javascript:' + encodeURIComponent(inner);
+}
+const ids = ['bundle', 'applyEach', 'aimMode', 'turnMode', 'snapTurnPixels', 'framebufferScale', 'worldScale', 'anchor', 'armMode', 'eyeUp', 'menuMode', 'armScale', 'boxScale', 'hideOutlines', 'handOffset', 'hideBody', 'uiOpacity'];
+const codeEl = document.getElementById('code');
+const sizeEl = document.getElementById('size');
+const statusEl = document.getElementById('status');
+
+function overrides() {
+  const v = (id) => document.getElementById(id).value;
+  const snap = Math.round(Math.min(2000, Math.max(20, Number(v('snapTurnPixels')) || 250)));
+  return {
+    turnMode: v('turnMode'),
+    snapTurnPixels: snap,
+    framebufferScale: Number(v('framebufferScale')),
+    worldScale: Number(v('worldScale')),
+    anchor: v('anchor'),
+    aimMode: v('aimMode') === 'head' ? 'head' : 'hand',
+    aimHand: v('aimMode') === 'left' ? 'left' : 'right',
+    armMode: v('armMode'),
+    armOverride: v('armMode') !== 'off',
+    eyeOffset: { up: Number(v('eyeUp')), forward: 0 },
+    armScale: Number(v('armScale')),
+    boxScale: Number(v('boxScale')),
+    uiOpacity: Number(v('uiOpacity')),
+    menu: { mode: v('menuMode') },
+    hideOutlines: v('hideOutlines'),
+    swapArms: true, // Fister names its arms backwards; always corrected
+    hideBody: v('hideBody') === 'true',
+    handOffset: (() => { const [f, i] = v('handOffset').split(',').map(Number); return { forward: f, inward: i, up: 0 }; })(),
+  };
+}
+
+function build() {
+  const withQol = document.getElementById('bundle').value === 'qol';
+  document.getElementById('qolOptions').hidden = !withQol;
+  document.getElementById('qolInfo').hidden = !withQol;
+  document.getElementById('bundleNote').textContent = withQol
+    ? 'The VR mod inside FisterQoL __QOL_VERSION__: the QoL settings tab, a VR tab, VR clips that record your headset view, and a controller button to save clips.'
+    : 'Just the VR mod. Small and quick to paste.';
+  let code;
+  if (withQol) {
+    code = qolLoader(QOL_PAYLOAD, overrides(), document.getElementById('applyEach').checked);
+  } else {
+    const prefix = 'globalThis.__fisterVrConfigOverrides=' + JSON.stringify(overrides()) + ';\n';
+    code = prefix + LAYER_SOURCE + '\nvoid 0;';
+  }
+  // Keep the raw (unsealed) bookmarklet out of the DOM. It is sealed with the password when you press Copy.
+  window.__fvRawCode = code;
+  codeEl.value = '';
+  sizeEl.textContent = (('javascript:' + encodeURIComponent(code)).length / 1024).toFixed(1) + ' KB before sealing.';
+  statusEl.textContent = 'Press Copy to seal with the password and copy.';
+  statusEl.className = 'status';
+  return code;
+}
+
+ids.forEach((id) => {
+  const el = document.getElementById(id);
+  el.addEventListener('change', build);
+  el.addEventListener('input', build);
+});
+
+document.getElementById('copy').addEventListener('click', async () => {
+  build();
+  const pw = fvSealPassword();
+  if (!pw) { statusEl.textContent = 'A password is needed to seal the bookmarklet.'; statusEl.className = 'status'; return; }
+  statusEl.textContent = 'Sealing…'; statusEl.className = 'status';
+  let url;
+  try { url = await fvSealedBookmarklet(window.__fvRawCode, pw); }
+  catch (e) { statusEl.textContent = 'Sealing failed: ' + (e && e.message || e); statusEl.className = 'status'; return; }
+  codeEl.value = url;
+  sizeEl.textContent = (url.length / 1024).toFixed(1) + ' KB of text (sealed). It\'s long; that\'s expected.';
+  const done = () => { statusEl.textContent = 'Copied the sealed bookmarklet. Paste it as the bookmark URL. It asks for the password each time it runs.'; statusEl.className = 'status ok'; };
+  const fallback = () => {
+    codeEl.focus();
+    codeEl.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    if (ok) done();
+    else { statusEl.textContent = 'Copy is blocked here. The sealed text below is selected; use the system Copy.'; statusEl.className = 'status'; }
+  };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fallback);
+    else fallback();
+  } catch (e) { fallback(); }
+});
+
+build();
+</script>
