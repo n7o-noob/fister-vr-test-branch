@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fister VR (WebXR layer)
 // @namespace    fister-vr.local
-// @version      0.9.13
+// @version      0.9.15
 // @description  Experimental WebXR / SteamVR layer for Fister: Enter VR button, first-person lock, 1:1 headset tracking, 6DoF controllers.
 // @match        https://fister.fun/*
 // @match        https://www.fister.fun/*
@@ -29,7 +29,7 @@
 
 (() => {
   'use strict';
-  const VERSION = '0.9.13';
+  const VERSION = '0.9.15';
   const root = globalThis;
   if (root.fisterVR) return;
 
@@ -454,6 +454,27 @@
   function captureRenderer(renderer) {
     if (state.renderers.has(renderer) || typeof renderer.render !== 'function' || !renderer.xr) return;
     state.renderers.add(renderer);
+    // Lost WebGL context (the GPU ran out or reset; the game shows "Restoring Graphics"): stop all extra drawing and
+    // leave VR, since the headset layer belongs to the dead context. Enter VR again once the game has restored it.
+    try {
+      const canvas = renderer.domElement;
+      if (canvas && canvas.addEventListener && !canvas.__fisterVrContextWatch) {
+        canvas.__fisterVrContextWatch = true;
+        canvas.addEventListener('webglcontextlost', () => {
+          state.contextLost = true;
+          record('error', ['WebGL context lost on a ' + (isMainRenderer(renderer) ? 'main' : 'small') + ' renderer (' + canvas.width + 'x' + canvas.height + ').' + (state.presenting ? ' Leaving VR.' : '')]);
+          state.overlay = null; state.clip = null;
+          if (state.presenting && renderer === state.renderer) {
+            toast('The game\'s graphics restarted. Press Enter VR again when it has loaded.');
+            try { const session = renderer.xr.getSession(); if (session) session.end(); } catch {}
+          }
+        });
+        canvas.addEventListener('webglcontextrestored', () => {
+          state.contextLost = false; state.overlay = null; state.clip = null;
+          log('WebGL context restored.');
+        });
+      }
+    } catch {}
 
     // Step 1 of the brief: renderer.xr.enabled = true directly after the WebGLRenderer is created.
     renderer.xr.enabled = true;
@@ -641,11 +662,27 @@
     }
     // Frame pacers (the game's, or FisterQoL's FPS cap) may skip a frame. An XR frame with no draw shows black,
     // so repeat the last view instead.
-    if (!state.mainRendered && state.threeScene && (state.frameCamera || state.gameCamera)) {
+    // Only repeat a view the game drew moments ago, and only for a few frames in a row. During map loading the game
+    // tears scenes down; re-drawing a disposed scene throws inside three.js and re-uploads all its textures and
+    // models, which on the Quest ran the GPU out of memory ("Restoring Graphics", browser freeze).
+    const nowMs = performance.now();
+    const fresh = nowMs - (state.lastRealRenderAt || 0) < 300 && (state.repeatRun || 0) < 20 && nowMs > (state.repeatBlockedUntil || 0);
+    if (!state.mainRendered && !state.contextLost && fresh && state.threeScene && (state.frameCamera || state.gameCamera)) {
       state.repeats = (state.repeats || 0) + 1;
+      state.repeatRun = (state.repeatRun || 0) + 1;
       state.repeating = true;
       try { renderMain(renderer, renderer.__fisterVrOriginalRender, state.threeScene, state.frameCamera || state.gameCamera); }
+      catch (error) {
+        state.threeScene = null; state.repeatBlockedUntil = nowMs + 2000;
+        state.repeatErrors = (state.repeatErrors || 0) + 1;
+        if (state.repeatErrors === 1 || state.repeatErrors % 50 === 0) record('error', ['Repeating the last view failed (the game probably replaced its scene); not repeating it again:', error]);
+        try { renderer.resetState(); } catch {}
+      }
       finally { state.repeating = false; }
+    } else if (!state.mainRendered && !state.contextLost && renderer.xr.isPresenting) {
+      // Nothing to show this frame (loading): keep the menu/loading panel visible on its own.
+      state.panelOnlyFrames = (state.panelOnlyFrames || 0) + 1;
+      try { drawOverlay(renderer); } catch { try { renderer.resetState(); } catch {} }
     }
   }
 
@@ -931,6 +968,7 @@
       if (state.xrTarget && previousTarget !== state.xrTarget) renderer.setRenderTarget(previousTarget);
     }
     state.mainRendered = true;
+    if (!state.repeating) { state.lastRealRenderAt = performance.now(); state.repeatRun = 0; }
     if (renderer.xr.isPresenting) {
       try { if (drawOverlay(renderer)) state.overlayOk = true; }
       catch (error) {
@@ -3695,7 +3733,7 @@
         + ' · laser: ' + (state.uiHit ? 'on ' + state.uiHit.element.tagName.toLowerCase() : 'off') + ' · mouse captured: ' + (document.pointerLockElement ? 'yes' : 'no'),
       'Input: keys to ' + describeEl(keyTarget()) + ' · focus ' + describeEl(document.activeElement) + ' · page focused ' + (nativeHasFocus.call(document) ? 'yes' : 'no')
         + ' · game locked ' + describeEl(state.lockTarget) + ' (' + (state.lockRequests || 0) + 'x) · keys held ' + ([...state.keysDown].join(' ') || 'none'),
-      'Frame: ' + (state.frameMs ? state.frameMs.toFixed(1) + ' ms' : '-') + ' · mod work ' + (state.modMs || 0).toFixed(1) + ' ms · repeated frames ' + (state.repeats || 0) + ' · blocked late clears ' + (state.blockedClears || 0) + ' · position glitches ' + (state.glitches || 0),
+      'Frame: ' + (state.frameMs ? state.frameMs.toFixed(1) + ' ms' : '-') + ' · mod work ' + (state.modMs || 0).toFixed(1) + ' ms · repeated frames ' + (state.repeats || 0) + (state.repeatErrors ? ' (' + state.repeatErrors + ' failed)' : '') + (state.panelOnlyFrames ? ' · panel-only frames ' + state.panelOnlyFrames : '') + (state.contextLost ? ' · CONTEXT LOST' : '') + ' · blocked late clears ' + (state.blockedClears || 0) + ' · position glitches ' + (state.glitches || 0),
       'Renders/s: ' + renderReport(),
       'Clips: ' + clipReport(),
       'Feature errors: ' + errors,

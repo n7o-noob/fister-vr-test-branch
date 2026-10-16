@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fister QoL — Browser
 // @namespace    fister-qol.local
-// @version      1.7.5
+// @version      2.0
 // @description  Quality-of-life mod for Fister: HUD, crosshair, camera, audio, performance, clips, music, outfits, pets, custom themes and optional WebXR VR mode, all in the game's Settings.
 // @match        https://fister.fun/*
 // @match        https://www.fister.fun/*
@@ -173,7 +173,7 @@ function bootstrapInfo(raw,url){
 
 // Patched-module cache: the game's main bundle URL is content-hashed, so a patch made for it stays valid
 // until the game updates. Keyed by script version + runtime size + bundle URL; only the newest entry is kept.
-const QOL_CACHE_DB='fister-qol-patch-cache',QOL_CACHE_STORE='patched',QOL_CACHE_VER='1.7.5:'+RUNTIME.length;
+const QOL_CACHE_DB='fister-qol-patch-cache',QOL_CACHE_STORE='patched',QOL_CACHE_VER='2.0:'+RUNTIME.length;
 function qolCacheDb(){return new Promise((res,rej)=>{const r=indexedDB.open(QOL_CACHE_DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(QOL_CACHE_STORE);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 async function qolCacheGet(key){const db=await qolCacheDb();try{return await new Promise((res,rej)=>{const q=db.transaction(QOL_CACHE_STORE,'readonly').objectStore(QOL_CACHE_STORE).get(key);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});}finally{db.close();}}
 async function qolCachePut(key,value){const db=await qolCacheDb();try{await new Promise((res,rej)=>{const tx=db.transaction(QOL_CACHE_STORE,'readwrite'),st=tx.objectStore(QOL_CACHE_STORE);st.clear();st.put(value,key);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}finally{db.close();}}

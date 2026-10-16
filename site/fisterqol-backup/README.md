@@ -8,6 +8,7 @@ Copies of FisterQoL kept alongside the setup page source. Nothing here is used b
 | `FisterQoL-Browser-v1.6.4.zip` | The original release zip |
 | `FisterQoL-v1.6.5.user.js` | 1.6.5 with the QoL > VR tab and VR clips (embeds Fister VR 0.8.3-qol.1) |
 | `FisterQoL-Browser-v1.6.5.zip` | The 1.6.5 release zip |
+| `FisterQoL-v2.0.user.js`, `README-v2.0.txt` | The plain 2.0 browser userscript (no VR) the current template was ported from with `tools/port-qol.cjs`. 2.0's browser script equals 1.7.5's; the release also ships Steam and Linux installers, not kept here |
 | `FisterQoL.user.template.js` | The template `tools/build.cjs` uses (Fister VR is inserted at `__FISTER_VR_SOURCE__`) |
 | `README-v1.6.4.txt`, `README-v1.6.5.txt` | Release notes |
 | `licenses/` | Licenses of third-party code bundled in FisterQoL, plus Fister VR's |
