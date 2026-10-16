@@ -1,4 +1,4 @@
-# Fister VR
+# Fister VR (test branch)
 
 An unofficial WebXR mod that lets you play [fister.fun](https://fister.fun) in VR, built for a
 standalone **Meta Quest 2**. It runs in the Quest Browser, with no PC, SteamVR or browser extensions.
@@ -6,7 +6,9 @@ standalone **Meta Quest 2**. It runs in the Quest Browser, with no PC, SteamVR o
 > Fan-made. Not created by, endorsed by or affiliated with the Fister developers (BOOTLOOP Studio).
 > It changes only what your own browser shows and sends, the same way your mouse and keyboard would.
 
-**Setup page:** https://n7o-noob.github.io/fister-vr/ (open it in the Quest Browser)
+**Test setup page (password-locked):** https://n7o-noob.github.io/fister-vr-test-branch/ (open it in the Quest Browser)
+
+**Stable setup page:** https://n7o-noob.github.io/fister-vr/
 
 ## Features
 
